@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="starwars-info-api-impl-flow" doc:id="b526e3c5-6b6b-4183-b8c7-fc0c1e940c82" >
+		<set-variable value="#[attributes.queryParams.gender]" doc:name="Set Gender" doc:id="10039145-57ee-4cc3-9431-37afe1681e72" variableName="gender"/>
+		<http:request method="GET" doc:name="Request" doc:id="41c32bcb-eb30-4011-a88d-6bfae0d82548" config-ref="HTTP_Request_configuration" path="/people" />
+		<ee:transform doc:name="Transform Message" doc:id="e9721490-8672-4bf5-a0c8-0801509c5ed3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="a5735deb-3bc8-44f9-8aa0-338f587357b0">
+			<when expression="#[vars.gender == null]">
+				<ee:transform doc:name="Transform Message" doc:id="42ea5dc6-81c2-43e5-b672-59648130172e">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+payload.results map(val,in)->
+{
+    "name": val.name default (" "),
+    "height": val.height  default (" "),
+    "mass": val.mass default (" "),
+    "hair_color": val.hair_color default (" "),
+    "skin_color": val.skin_color default (" "),
+    "eye_color": val.eye_color default (" "),
+    "birth_year": val.birth_year default (" "),
+    "gender": val.gender default (" ")
+
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise>
+				<choice doc:name="Choice" doc:id="ec6e1e10-be7f-422a-b78f-d5cc4e006038" >
+					<when expression='#[vars.gender == "female" or vars.gender == "male" or vars.gender=="n/a"]'>
+						<ee:transform doc:name="Transform Message" doc:id="db0c177d-a60f-469b-89a6-321485b56e1f">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.results map(val,in)->
+{
+    "name": val.name default (" "),
+    "height": val.height  default (" "),
+    "mass": val.mass default (" "),
+    "hair_color": val.hair_color default (" "),
+    "skin_color": val.skin_color default (" "),
+    "eye_color": val.eye_color default (" "),
+    "birth_year": val.birth_year default (" "),
+    "gender": val.gender default (" ")
+
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<ee:transform doc:name="Transform Message" doc:id="de2ee5fc-ebad-4687-b34b-e484957cca26">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+import update from dw::util::Values
+---
+payload filter ($.gender == vars.gender)]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<ee:transform doc:name="Transform Message" doc:id="75ac2978-380d-420c-a472-3b520ce25ddc">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Transform Message" doc:id="4fefb84f-ebb7-4f46-b72b-4c41aa5b38fc" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"No se encontraron datos"]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="05192975-961a-4b4e-8c8f-0f64dfddca14" type="HTTP:INTERNAL_SERVER_ERROR" >
+				<ee:transform doc:name="Transform Message" doc:id="4dd627b8-4c8b-42ea-8418-5070747bc267" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": "Error interno en servidor",
+	"Component": error.failingComponent
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Logger error" doc:id="1de310f1-115f-4d7f-9b3c-956c1288675f" message="#[payload]" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7539032b-80d9-48c2-8b8b-8a540f0b1b9a" type="HTTP:CONNECTIVITY" >
+				<ee:transform doc:name="Transform Message" doc:id="411a8f9f-c52f-4acd-97ed-879cd876c28c" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": "Error en conexión",
+	"Component": error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Logger error" doc:id="d40e8a06-b02d-4fa6-a9dc-e71a3a2602df" message="#[payload]" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6774b134-9a39-4c2e-a0db-86c10043e996" type="HTTP:METHOD_NOT_ALLOWED" >
+				<ee:transform doc:name="Transform Message" doc:id="43b44cdf-521f-4afc-a28a-a67d1edf5b5e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Message": "Método no permitido",
+	"Component": error.description
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="ERROR" doc:name="Logger error" doc:id="33208f45-da93-47ff-8fff-34204147e67b" message="#[payload]" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_b526e3c5_6b6b_4183_b8c7_fc0c1e940c82_Output_Variables_gender = String | Null
+

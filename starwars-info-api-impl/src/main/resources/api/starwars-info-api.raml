@@ -1,0 +1,38 @@
+#%RAML 1.0
+title: starwars-info-api
+version: v1
+mediaType: 
+- application/json
+protocols:
+  - HTTP
+
+/information:
+  get:
+    description: Method to obtain the information of the characters of starwars
+    queryParameters:
+      gender:
+        type: string
+        required: false
+    responses:
+      200:
+        description: Information about starwars characters
+        body:
+          application/json:
+            type: string
+            examples:
+              message: Succesfully
+      400:
+        description: 
+        body:
+          application/json:
+            example:
+              message: Error Message
+      500:
+        description: 
+        body:
+          application/json:
+            example:
+              message: Internal Server Error     
+
+
+
